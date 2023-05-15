@@ -1,7 +1,15 @@
 ﻿{
   "name": "com.bustedbunny.nativemessenger",
   "version": "1.0.0",
+  "displayName": "ECS Native Messenger",
+  "description": "This is system-wide native messenger for Unity Entities. It provides an efficient way to trigger systems on demand without involving entities data or any structural changes.",
+  "unity": "2022.2",
+  "unityRelease": "19f",
   "dependencies": {
     "com.unity.entities": "1.0.8"
+  },
+  "author": {
+    "name": "bustedbunny",
+    "email": "bustedbunny@bk.ru"
   }
 }
