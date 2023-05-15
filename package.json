@@ -2,5 +2,6 @@
   "name": "com.bustedbunny.nativemessenger",
   "version": "1.0.0",
   "dependencies": {
+    "com.unity.entities": "1.0.8"
   }
 }
