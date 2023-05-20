@@ -7,6 +7,10 @@ using Unity.Entities;
 
 namespace NativeMessenger
 {
+    #if !NATIVEMESSENGER_MANUAL_ORDER
+    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
+    [UpdateAfter(typeof(BeginSimulationEntityCommandBufferSystem))]
+    #endif
     public unsafe partial class NativeEventSystemGroup : ComponentSystemGroup
     {
         private struct EventSystemHandle
@@ -29,9 +33,9 @@ namespace NativeMessenger
             public NativeList<byte> dataBuffer;
         }
 
+        private NativeList<EventSystemHandle> _systemHandles;
         private NativeHashMap<int, TypeDataHandle> _dataMap;
 
-        private NativeList<EventSystemHandle> _systemHandles;
 
         private NativeList<byte> _messenger;
 
@@ -148,7 +152,7 @@ namespace NativeMessenger
             }
         }
 
-        protected override unsafe void OnUpdate()
+        protected override void OnUpdate()
         {
             var data = _messenger;
             if (data.Length == 0)
@@ -160,13 +164,28 @@ namespace NativeMessenger
             var iterator = 0;
             while (iterator < data.Length)
             {
-                var hash = UnsafeUtility.AsRef<int>(ptr + iterator);
-                var dataPtr = ptr + iterator + sizeof(int);
+                var src = ptr + iterator;
 
-                var handle = _dataMap[hash];
-                handle.dataBuffer.AddRange(dataPtr, handle.size);
+                var header = UnsafeUtility.AsRef<MessageHeader>(src);
+                var headerSize = sizeof(MessageHeader);
 
-                iterator += sizeof(int) + handle.size;
+                const int zero = 0;
+                const int intSize = sizeof(int);
+
+                var headerFlags = (MessageFlags)header.flags;
+                var multiCountSize = headerFlags is MessageFlags.Multi ? intSize : zero;
+
+                var count = headerFlags is MessageFlags.Multi
+                    ? UnsafeUtility.AsRef<int>(src + headerSize)
+                    : 1;
+
+                var dataPtr = src + headerSize + multiCountSize;
+
+                var handle = _dataMap[header.hash];
+
+                handle.dataBuffer.AddRange(dataPtr, handle.size * count);
+
+                iterator += headerSize + multiCountSize + handle.size * count;
             }
 
             var world = World.Unmanaged;
